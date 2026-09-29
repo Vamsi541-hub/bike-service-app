@@ -1,0 +1,7 @@
+{
+  "name": "BikeCare",
+  "description": "Your Bike. Your Care. Modern, lightweight bike service, emergency assistance, spare parts, and maintenance app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+

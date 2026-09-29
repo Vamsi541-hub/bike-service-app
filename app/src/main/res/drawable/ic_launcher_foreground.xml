@@ -1,0 +1,50 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Motorcycle Body & Wheels within 66dp safe zone (21 to 87) -->
+    <!-- Rear Wheel -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="3.5"
+        android:pathData="M38,64 A10,10 0 1,1 37.99,64" />
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M38,64 A3,3 0 1,1 37.99,64" />
+
+    <!-- Front Wheel -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#38BDF8"
+        android:strokeWidth="3.5"
+        android:pathData="M70,64 A10,10 0 1,1 69.99,64" />
+    <path
+        android:fillColor="#38BDF8"
+        android:pathData="M70,64 A3,3 0 1,1 69.99,64" />
+
+    <!-- Motorcycle Frame / Chassis -->
+    <path
+        android:fillColor="#F8FAFC"
+        android:pathData="M38,64 L46,54 L55,54 L63,45 L71,45 L69,48 L65,48 L58,56 L47,56 L41,64 Z" />
+    
+    <!-- Fuel Tank & Seat -->
+    <path
+        android:fillColor="#F97316"
+        android:pathData="M44,52 C45,49 48,47 52,47 C56,47 60,49 61,51 L56,53 L47,53 Z" />
+
+    <!-- Handlebar & Front Fork -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#F8FAFC"
+        android:strokeWidth="2.5"
+        android:strokeLineCap="round"
+        android:pathData="M70,64 L63,44 L66,42" />
+
+    <!-- Service Gear / Wrench Accent in background of bike -->
+    <path
+        android:fillColor="#38BDF8"
+        android:fillAlpha="0.85"
+        android:pathData="M52,36 L56,36 L57,38 L59,39 L61,38 L63,40 L62,42 L63,44 L61,45 L59,44 L57,45 L56,47 L52,47 L51,45 L49,44 L47,45 L45,43 L46,41 L45,39 L47,38 L49,39 L51,38 Z" />
+</vector>
