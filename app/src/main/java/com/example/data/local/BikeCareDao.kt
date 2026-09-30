@@ -14,10 +14,19 @@ interface BikeCareDao {
     @Query("SELECT * FROM users")
     fun getAllUsers(): Flow<List<User>>
 
+    @Query("SELECT * FROM users WHERE LOWER(email) = LOWER(:emailOrPhone) OR phone = :emailOrPhone LIMIT 1")
+    suspend fun findUserByEmailOrPhone(emailOrPhone: String): User?
+
+    @Query("SELECT * FROM users WHERE (LOWER(email) = LOWER(:emailOrPhone) OR phone = :emailOrPhone) AND password = :password LIMIT 1")
+    suspend fun authenticateUser(emailOrPhone: String, password: String): User?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertUser(user: User)
 
     // --- Bikes ---
+    @Query("SELECT * FROM bikes")
+    fun getAllBikes(): Flow<List<Bike>>
+
     @Query("SELECT * FROM bikes WHERE userId = :userId")
     fun getBikesForUser(userId: String): Flow<List<Bike>>
 
@@ -116,4 +125,39 @@ interface BikeCareDao {
 
     @Query("UPDATE notifications SET isRead = 1")
     suspend fun markAllNotificationsAsRead()
+
+    // --- Service History & Repair Logs ---
+    @Query("SELECT * FROM service_records ORDER BY odometerKm DESC")
+    fun getAllServiceRecords(): Flow<List<ServiceRecord>>
+
+    @Query("SELECT * FROM service_records WHERE bikeId = :bikeId ORDER BY odometerKm DESC")
+    fun getServiceRecordsForBike(bikeId: String): Flow<List<ServiceRecord>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertServiceRecord(record: ServiceRecord)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertServiceRecords(records: List<ServiceRecord>)
+
+    @Query("DELETE FROM service_records WHERE id = :id")
+    suspend fun deleteServiceRecord(id: String)
+
+    // --- Maintenance Interval Reminders ---
+    @Query("SELECT * FROM maintenance_reminders ORDER BY dueKm ASC")
+    fun getAllReminders(): Flow<List<MaintenanceReminder>>
+
+    @Query("SELECT * FROM maintenance_reminders WHERE bikeId = :bikeId ORDER BY dueKm ASC")
+    fun getRemindersForBike(bikeId: String): Flow<List<MaintenanceReminder>>
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReminder(reminder: MaintenanceReminder)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertReminders(reminders: List<MaintenanceReminder>)
+
+    @Update
+    suspend fun updateReminder(reminder: MaintenanceReminder)
+
+    @Query("DELETE FROM maintenance_reminders WHERE id = :id")
+    suspend fun deleteReminder(id: String)
 }

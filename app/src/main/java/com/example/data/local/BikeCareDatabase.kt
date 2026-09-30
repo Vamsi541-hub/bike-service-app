@@ -45,9 +45,11 @@ class BikeCareTypeConverters {
         Booking::class,
         SparePart::class,
         CartItem::class,
-        AppNotification::class
+        AppNotification::class,
+        ServiceRecord::class,
+        MaintenanceReminder::class
     ],
-    version = 1,
+    version = 3,
     exportSchema = false
 )
 @TypeConverters(BikeCareTypeConverters::class)

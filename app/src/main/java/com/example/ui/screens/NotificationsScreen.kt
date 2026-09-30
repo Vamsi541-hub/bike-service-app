@@ -77,7 +77,7 @@ fun NotificationsScreen(
                 contentPadding = PaddingValues(vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                items(notifications) { notif ->
+                items(notifications, key = { it.id }) { notif ->
                     Card(
                         shape = RoundedCornerShape(16.dp),
                         colors = CardDefaults.cardColors(

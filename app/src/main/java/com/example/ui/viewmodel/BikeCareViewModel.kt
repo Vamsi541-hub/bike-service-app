@@ -15,6 +15,7 @@ import java.util.UUID
 
 sealed class AppScreen {
     object Main : AppScreen()
+    object Auth : AppScreen()
     object MapNavigation : AppScreen()
     data class BookingFlow(val preselectedService: ServiceItem? = null, val preselectedProvider: ServiceProvider? = null) : AppScreen()
     data class BookingConfirmation(val booking: Booking) : AppScreen()
@@ -32,7 +33,7 @@ class BikeCareViewModel(
 ) : ViewModel() {
 
     // --- Active Screen State ---
-    private val _currentScreen = MutableStateFlow<AppScreen>(AppScreen.Main)
+    private val _currentScreen = MutableStateFlow<AppScreen>(AppScreen.Auth)
     val currentScreen: StateFlow<AppScreen> = _currentScreen.asStateFlow()
 
     // --- Active Bottom Nav Tab ---
@@ -44,9 +45,8 @@ class BikeCareViewModel(
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 
     // --- Auth & User State ---
-    private val _currentUser = repository.getUser("current_user")
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
-    val currentUser: StateFlow<User?> = _currentUser
+    private val _currentUser = MutableStateFlow<User?>(null)
+    val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
 
     // --- Bikes ---
     val allBikes: StateFlow<List<Bike>> = repository.allBikes
@@ -87,6 +87,13 @@ class BikeCareViewModel(
     val unreadNotifsCount: StateFlow<Int> = notifications.map { list ->
         list.count { !it.isRead }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+
+    // --- Service Records & Maintenance Reminders ---
+    val serviceRecords: StateFlow<List<ServiceRecord>> = repository.serviceRecords
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    val maintenanceReminders: StateFlow<List<MaintenanceReminder>> = repository.maintenanceReminders
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // --- Cloud Sync ---
     val syncState: StateFlow<SyncState> = repository.getSyncManager().syncState
@@ -133,6 +140,27 @@ class BikeCareViewModel(
     fun selectTab(tab: com.example.ui.components.AppTab) {
         _currentTab.value = tab
         if (_currentScreen.value !is AppScreen.Main) {
+            _currentScreen.value = AppScreen.Main
+        }
+    }
+
+    fun logout() {
+        _currentUser.value = null
+        _currentScreen.value = AppScreen.Auth
+    }
+
+    suspend fun checkExistingUser(emailOrPhone: String): User? {
+        return repository.findUser(emailOrPhone)
+    }
+
+    suspend fun authenticateUser(emailOrPhone: String, password: String): User? {
+        return repository.authenticateUser(emailOrPhone, password)
+    }
+
+    fun loginUser(user: User) {
+        viewModelScope.launch {
+            repository.saveUser(user)
+            _currentUser.value = user
             _currentScreen.value = AppScreen.Main
         }
     }
@@ -263,6 +291,44 @@ class BikeCareViewModel(
                     status = BookingStatus.ACCEPTED
                 )
             )
+        }
+    }
+
+    // --- Service Record & Past Repairs Actions ---
+    fun addServiceRecord(record: ServiceRecord) {
+        viewModelScope.launch {
+            repository.addServiceRecord(record)
+        }
+    }
+
+    fun deleteServiceRecord(id: String) {
+        viewModelScope.launch {
+            repository.deleteServiceRecord(id)
+        }
+    }
+
+    // --- Maintenance Interval Reminder Actions ---
+    fun addMaintenanceReminder(reminder: MaintenanceReminder) {
+        viewModelScope.launch {
+            repository.addMaintenanceReminder(reminder)
+        }
+    }
+
+    fun deleteMaintenanceReminder(id: String) {
+        viewModelScope.launch {
+            repository.deleteMaintenanceReminder(id)
+        }
+    }
+
+    fun markReminderServiced(
+        reminder: MaintenanceReminder,
+        completedAtKm: Int,
+        dateStr: String,
+        cost: Int = 0,
+        mechanic: String = "Scheduled Service"
+    ) {
+        viewModelScope.launch {
+            repository.markReminderServiced(reminder, completedAtKm, dateStr, cost, mechanic)
         }
     }
 

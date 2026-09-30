@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -114,7 +115,7 @@ fun ServicesScreen(
             }
 
             // Service Cards List
-            items(filteredServices) { service ->
+            items(filteredServices, key = { it.id }) { service ->
                 val isSelected = selectedServiceIds.contains(service.id)
                 ServiceItemCard(
                     service = service,
@@ -166,7 +167,7 @@ fun ServicesScreen(
                     ) {
                         Text("Proceed to Book", fontWeight = FontWeight.Bold)
                         Spacer(modifier = Modifier.width(6.dp))
-                        Icon(Icons.Default.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, modifier = Modifier.size(16.dp))
                     }
                 }
             }

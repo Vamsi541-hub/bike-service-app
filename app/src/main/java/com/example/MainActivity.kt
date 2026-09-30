@@ -56,6 +56,8 @@ class MainActivity : ComponentActivity() {
             val cartItems by viewModel.cartItems.collectAsStateWithLifecycle()
             val notifications by viewModel.notifications.collectAsStateWithLifecycle()
             val unreadCount by viewModel.unreadNotifsCount.collectAsStateWithLifecycle()
+            val serviceRecords by viewModel.serviceRecords.collectAsStateWithLifecycle()
+            val maintenanceReminders by viewModel.maintenanceReminders.collectAsStateWithLifecycle()
             val syncState by viewModel.syncState.collectAsStateWithLifecycle()
             val selectedServiceIds by viewModel.selectedServiceIds.collectAsStateWithLifecycle()
             val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
@@ -179,9 +181,9 @@ class MainActivity : ComponentActivity() {
                                                 onViewBookings = { viewModel.navigateTo(AppScreen.ServiceHistory) },
                                                 onViewServiceHistory = { viewModel.navigateTo(AppScreen.ServiceHistory) },
                                                 onViewCustomization = { viewModel.navigateTo(AppScreen.CustomizationStudio) },
-                                                onSwitchRole = { viewModel.switchRole(it) },
                                                 onOpenProviderDashboard = { viewModel.navigateTo(AppScreen.ProviderDashboard) },
-                                                onOpenAdminDashboard = { viewModel.navigateTo(AppScreen.AdminDashboard) }
+                                                onOpenAdminDashboard = { viewModel.navigateTo(AppScreen.AdminDashboard) },
+                                                onOpenAuth = { viewModel.logout() }
                                             )
                                         }
                                     }
@@ -274,7 +276,16 @@ class MainActivity : ComponentActivity() {
 
                         is AppScreen.ServiceHistory -> {
                             ServiceHistoryScreen(
-                                bookings = userBookings,
+                                bike = selectedBike,
+                                serviceRecords = serviceRecords,
+                                reminders = maintenanceReminders,
+                                onAddServiceRecord = { viewModel.addServiceRecord(it) },
+                                onDeleteServiceRecord = { viewModel.deleteServiceRecord(it) },
+                                onAddReminder = { viewModel.addMaintenanceReminder(it) },
+                                onDeleteReminder = { viewModel.deleteMaintenanceReminder(it) },
+                                onMarkReminderServiced = { rem, odo, date, cost, mech ->
+                                    viewModel.markReminderServiced(rem, odo, date, cost, mech)
+                                },
                                 onBack = { viewModel.navigateBack() }
                             )
                         }
@@ -297,6 +308,14 @@ class MainActivity : ComponentActivity() {
                                     viewModel.navigateTo(AppScreen.ServiceHistory)
                                 },
                                 onBack = { viewModel.navigateBack() }
+                            )
+                        }
+
+                        is AppScreen.Auth -> {
+                            AuthScreen(
+                                onCheckUser = { emailOrPhone -> viewModel.checkExistingUser(emailOrPhone) },
+                                onAuthenticate = { emailOrPhone, password -> viewModel.authenticateUser(emailOrPhone, password) },
+                                onAuthSuccess = { user -> viewModel.loginUser(user) }
                             )
                         }
                     }

@@ -207,7 +207,7 @@ fun SparePartsScreen(
             }
 
             // Products List
-            items(filteredParts) { part ->
+            items(filteredParts, key = { it.id }) { part ->
                 ProductPartCard(
                     part = part,
                     selectedBikeModel = selectedBike?.model,

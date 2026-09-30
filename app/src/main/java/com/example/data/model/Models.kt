@@ -15,6 +15,7 @@ data class User(
     val name: String,
     val email: String,
     val phone: String,
+    val password: String = "",
     val role: UserRole = UserRole.CUSTOMER,
     val location: String = "Mumbai, India",
     // Service provider specific
@@ -153,3 +154,35 @@ data class CustomizationOption(
     val description: String,
     val visualType: String // e.g., "bar_end", "slip_on", "racing_camo"
 )
+
+@Entity(tableName = "service_records")
+data class ServiceRecord(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val bikeId: String,
+    val bikeDetails: String,
+    val title: String,
+    val serviceType: String, // "Engine & Oil", "Brakes", "Tyres & Wheels", "Chain & Sprocket", "General Service", "Electrical & Battery", "DIY Repair"
+    val date: String, // e.g., "18 Sep 2026"
+    val odometerKm: Int,
+    val workshopOrMechanic: String,
+    val cost: Int,
+    val partsReplaced: String = "",
+    val notes: String = "",
+    val invoiceNumber: String = ""
+)
+
+@Entity(tableName = "maintenance_reminders")
+data class MaintenanceReminder(
+    @PrimaryKey val id: String = java.util.UUID.randomUUID().toString(),
+    val bikeId: String,
+    val title: String,
+    val componentCategory: String, // "Oil & Lubrication", "Drivetrain", "Braking System", "Engine & Filters", "Periodic Inspection", "Statutory & Insurance"
+    val intervalKm: Int, // e.g., 5000 km
+    val intervalDays: Int, // e.g., 180 days
+    val lastServicedKm: Int, // e.g., 10000 km
+    val dueKm: Int, // e.g., 15000 km
+    val dueDate: String, // e.g., "15 Nov 2026"
+    val isCompleted: Boolean = false,
+    val notes: String = ""
+)
+

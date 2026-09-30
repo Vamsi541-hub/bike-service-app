@@ -450,7 +450,7 @@ fun HomeScreen(
             }
         }
 
-        items(providers) { provider ->
+        items(providers, key = { it.id }) { provider ->
             ProviderCard(
                 provider = provider,
                 onCall = { onProviderCall(provider.businessName, provider.phone) },

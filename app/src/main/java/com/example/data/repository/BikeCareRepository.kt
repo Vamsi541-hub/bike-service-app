@@ -15,18 +15,22 @@ class BikeCareRepository(
     private val syncManager: CloudSyncManager,
     private val geminiService: com.example.data.gemini.GeminiChatService
 ) {
-    val allBikes: Flow<List<Bike>> = dao.getBikesForUser("current_user")
+    val allBikes: Flow<List<Bike>> = dao.getAllBikes()
     val selectedBike: Flow<Bike?> = dao.getSelectedBike()
     val allServices: Flow<List<ServiceItem>> = dao.getAllServices()
     val allProviders: Flow<List<ServiceProvider>> = dao.getAllProviders()
     val approvedProviders: Flow<List<ServiceProvider>> = dao.getApprovedProviders()
     val allBookings: Flow<List<Booking>> = dao.getAllBookings()
-    val userBookings: Flow<List<Booking>> = dao.getBookingsForUser("current_user")
+    val userBookings: Flow<List<Booking>> = dao.getAllBookings()
     val allParts: Flow<List<SparePart>> = dao.getAllParts()
     val cartItems: Flow<List<CartItem>> = dao.getCartItems()
     val notifications: Flow<List<AppNotification>> = dao.getAllNotifications()
+    val serviceRecords: Flow<List<ServiceRecord>> = dao.getAllServiceRecords()
+    val maintenanceReminders: Flow<List<MaintenanceReminder>> = dao.getAllReminders()
 
     fun getUser(userId: String): Flow<User?> = dao.getUserById(userId)
+    suspend fun findUser(emailOrPhone: String): User? = dao.findUserByEmailOrPhone(emailOrPhone.trim())
+    suspend fun authenticateUser(emailOrPhone: String, password: String): User? = dao.authenticateUser(emailOrPhone.trim(), password)
     fun getBookingsForProvider(providerId: String): Flow<List<Booking>> = dao.getBookingsForProvider(providerId)
 
     init {
@@ -36,28 +40,13 @@ class BikeCareRepository(
     }
 
     private suspend fun seedInitialDataIfEmpty() {
-        // Seed default user
-        val existingUser = dao.getUserById("current_user").firstOrNull()
-        if (existingUser == null) {
-            dao.insertUser(
-                User(
-                    id = "current_user",
-                    name = "Rahul Sharma",
-                    email = "rahul.sharma@example.com",
-                    phone = "+91 98765 43210",
-                    role = UserRole.CUSTOMER,
-                    location = "Koramangala, Bengaluru"
-                )
-            )
-        }
-
         // Seed default selected bike if empty
-        val existingBikes = dao.getBikesForUser("current_user").firstOrNull()
+        val existingBikes = dao.getAllBikes().firstOrNull()
         if (existingBikes.isNullOrEmpty()) {
             dao.insertBike(
                 Bike(
                     id = "bike_1",
-                    userId = "current_user",
+                    userId = "user_default",
                     brand = "Yamaha",
                     model = "MT-15",
                     variant = "Version 2.0 Deluxe",
@@ -75,7 +64,7 @@ class BikeCareRepository(
             dao.insertBike(
                 Bike(
                     id = "bike_2",
-                    userId = "current_user",
+                    userId = "user_default",
                     brand = "Ather",
                     model = "450X",
                     variant = "Gen 3.7",
@@ -230,6 +219,120 @@ class BikeCareRepository(
                     type = "PROMO"
                 )
             )
+
+            // Seed Initial Service Records & Past Repairs
+            dao.insertServiceRecords(
+                listOf(
+                    ServiceRecord(
+                        id = "srv_rec_1",
+                        bikeId = "bike_1",
+                        bikeDetails = "Yamaha MT-15 V2 (2024)",
+                        title = "10,000 KM Periodic Service & Synthetic Oil",
+                        serviceType = "Engine & Oil",
+                        date = "12 Sep 2026",
+                        odometerKm = 10450,
+                        workshopOrMechanic = "Apex MotoCare Studio",
+                        cost = 2450,
+                        partsReplaced = "Motul 7100 10W40 (1.1L), OEM Oil Filter, Crush Gasket",
+                        notes = "Chain slack adjusted to 25mm. All brake calipers cleaned and bleed checked.",
+                        invoiceNumber = "INV-2026-904"
+                    ),
+                    ServiceRecord(
+                        id = "srv_rec_2",
+                        bikeId = "bike_1",
+                        bikeDetails = "Yamaha MT-15 V2 (2024)",
+                        title = "Rear Brake Pad Replacement & Disc Deglaze",
+                        serviceType = "Brakes",
+                        date = "18 Jul 2026",
+                        odometerKm = 8200,
+                        workshopOrMechanic = "Brembo QuickStop Garage",
+                        cost = 1150,
+                        partsReplaced = "Ceramic Performance Brake Pads",
+                        notes = "Replaced thin rear pads. Rotor surface in great shape.",
+                        invoiceNumber = "INV-2026-681"
+                    ),
+                    ServiceRecord(
+                        id = "srv_rec_3",
+                        bikeId = "bike_1",
+                        bikeDetails = "Yamaha MT-15 V2 (2024)",
+                        title = "DIY Chain Clean, Slack Tension & Wax Lube",
+                        serviceType = "Chain & Sprocket",
+                        date = "22 Jun 2026",
+                        odometerKm = 6800,
+                        workshopOrMechanic = "Self DIY Garage",
+                        cost = 450,
+                        partsReplaced = "Motul C1 Clean & C2 Road Lube Spray",
+                        notes = "Cleaned with grunge brush and applied high-tack chain wax.",
+                        invoiceNumber = "DIY-SELF-01"
+                    )
+                )
+            )
+
+            // Seed Initial Maintenance Reminders
+            dao.insertReminders(
+                listOf(
+                    MaintenanceReminder(
+                        id = "rem_1",
+                        bikeId = "bike_1",
+                        title = "Engine Oil & Filter Replacement",
+                        componentCategory = "Oil & Lubrication",
+                        intervalKm = 5000,
+                        intervalDays = 180,
+                        lastServicedKm = 10450,
+                        dueKm = 15450,
+                        dueDate = "12 Mar 2027",
+                        notes = "Recommended 10W40 Full Synthetic JASO MA2"
+                    ),
+                    MaintenanceReminder(
+                        id = "rem_2",
+                        bikeId = "bike_1",
+                        title = "Drive Chain Cleaning & Lubrication",
+                        componentCategory = "Drivetrain",
+                        intervalKm = 500,
+                        intervalDays = 21,
+                        lastServicedKm = 11200,
+                        dueKm = 11700,
+                        dueDate = "Every 500 km or after heavy rain",
+                        notes = "Maintain 20-30 mm chain play"
+                    ),
+                    MaintenanceReminder(
+                        id = "rem_3",
+                        bikeId = "bike_1",
+                        title = "Spark Plug Check & Gap Inspection",
+                        componentCategory = "Periodic Inspection",
+                        intervalKm = 12000,
+                        intervalDays = 365,
+                        lastServicedKm = 0,
+                        dueKm = 12000,
+                        dueDate = "Due soon at 12,000 km",
+                        notes = "Inspect electrode color for fuel mixture"
+                    ),
+                    MaintenanceReminder(
+                        id = "rem_4",
+                        bikeId = "bike_1",
+                        title = "Brake Fluid Flush & Bleed (DOT 4)",
+                        componentCategory = "Braking System",
+                        intervalKm = 10000,
+                        intervalDays = 365,
+                        lastServicedKm = 8200,
+                        dueKm = 18200,
+                        dueDate = "18 Jul 2027",
+                        notes = "Inspect master cylinder window for moisture"
+                    ),
+                    MaintenanceReminder(
+                        id = "rem_5",
+                        bikeId = "bike_1",
+                        title = "Air Filter Cleaning / Replacement",
+                        componentCategory = "Engine & Filters",
+                        intervalKm = 8000,
+                        intervalDays = 240,
+                        lastServicedKm = 10450,
+                        dueKm = 18450,
+                        dueDate = "12 May 2027",
+                        notes = "Paper element filter - replace, do not wash"
+                    )
+                )
+            )
         }
     }
 
@@ -320,6 +423,73 @@ class BikeCareRepository(
 
     suspend fun markAllNotificationsRead() {
         dao.markAllNotificationsAsRead()
+    }
+
+    // --- Service Record & Past Repairs Actions ---
+    suspend fun addServiceRecord(record: ServiceRecord) {
+        dao.insertServiceRecord(record)
+        syncManager.triggerSync("Logged service repair: ${record.title}")
+    }
+
+    suspend fun deleteServiceRecord(id: String) {
+        dao.deleteServiceRecord(id)
+    }
+
+    // --- Maintenance Interval Reminder Actions ---
+    suspend fun addMaintenanceReminder(reminder: MaintenanceReminder) {
+        dao.insertReminder(reminder)
+        syncManager.triggerSync("Set reminder: ${reminder.title}")
+    }
+
+    suspend fun updateMaintenanceReminder(reminder: MaintenanceReminder) {
+        dao.updateReminder(reminder)
+    }
+
+    suspend fun deleteMaintenanceReminder(id: String) {
+        dao.deleteReminder(id)
+    }
+
+    suspend fun markReminderServiced(
+        reminder: MaintenanceReminder,
+        completedAtKm: Int,
+        dateStr: String,
+        cost: Int = 0,
+        mechanic: String = "Scheduled Service"
+    ) {
+        val nextDueKm = completedAtKm + reminder.intervalKm
+        val updated = reminder.copy(
+            lastServicedKm = completedAtKm,
+            dueKm = nextDueKm,
+            dueDate = "Due in ${reminder.intervalKm} km",
+            isCompleted = false
+        )
+        dao.updateReminder(updated)
+
+        // Automatically log to past repairs history
+        val historyEntry = ServiceRecord(
+            bikeId = reminder.bikeId,
+            bikeDetails = "Yamaha MT-15 V2",
+            title = reminder.title,
+            serviceType = reminder.componentCategory,
+            date = dateStr,
+            odometerKm = completedAtKm,
+            workshopOrMechanic = mechanic,
+            cost = cost,
+            partsReplaced = "${reminder.title} components",
+            notes = "Completed scheduled interval checkup. Next due at $nextDueKm km."
+        )
+        dao.insertServiceRecord(historyEntry)
+
+        // Also add an app notification
+        dao.insertNotification(
+            AppNotification(
+                id = java.util.UUID.randomUUID().toString(),
+                title = "Service Completed ✓",
+                message = "${reminder.title} recorded at $completedAtKm km. Next interval scheduled for $nextDueKm km.",
+                type = "MAINTENANCE"
+            )
+        )
+        syncManager.triggerSync("Serviced reminder: ${reminder.title}")
     }
 
     // --- Cloud Sync ---

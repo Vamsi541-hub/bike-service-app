@@ -8,6 +8,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -36,12 +38,10 @@ fun ProfileScreen(
     onViewBookings: () -> Unit,
     onViewServiceHistory: () -> Unit,
     onViewCustomization: () -> Unit,
-    onSwitchRole: (UserRole) -> Unit,
     onOpenProviderDashboard: () -> Unit,
-    onOpenAdminDashboard: () -> Unit
+    onOpenAdminDashboard: () -> Unit,
+    onOpenAuth: () -> Unit
 ) {
-    var showRoleSwitchDialog by remember { mutableStateOf(false) }
-
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -174,9 +174,9 @@ fun ProfileScreen(
             }
         }
 
-        // Portals & Role Switch Section
+        // Portals Section
         item {
-            Text("Portals & Switch Role", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Partner & Administration Portals", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         item {
@@ -189,8 +189,6 @@ fun ProfileScreen(
                     ProfileMenuRow("Service Provider Dashboard", Icons.Default.Storefront, "Manage garage bookings, requests & earnings", onOpenProviderDashboard)
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuRow("Admin Control Panel", Icons.Default.AdminPanelSettings, "Platform overview, provider approvals & stats", onOpenAdminDashboard)
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileMenuRow("Switch Account Role (Demo)", Icons.Default.SwitchAccount, "Toggle between Customer, Provider & Admin", { showRoleSwitchDialog = true })
                 }
             }
         }
@@ -232,62 +230,16 @@ fun ProfileScreen(
 
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
 
+                    ProfileMenuRow("Account & Login Screen", Icons.Default.AccountCircle, "View and switch login credentials", onOpenAuth)
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
                     ProfileMenuRow("Saved Service Providers", Icons.Default.BookmarkBorder, "Quick access to your trusted mechanics") {}
                     HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-                    ProfileMenuRow("Help & Support", Icons.Default.HelpOutline, "FAQs, warranty terms & roadside hotline") {}
+                    ProfileMenuRow("Help & Support", Icons.AutoMirrored.Filled.HelpOutline, "FAQs, warranty terms & roadside hotline") {}
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                    ProfileMenuRow("Sign Out / Switch Account", Icons.AutoMirrored.Filled.Logout, "Return to BikeCare Sign In portal", onOpenAuth)
                 }
             }
         }
-    }
-
-    // Role Switch Dialog
-    if (showRoleSwitchDialog) {
-        AlertDialog(
-            onDismissRequest = { showRoleSwitchDialog = false },
-            title = { Text("Switch Demo Role") },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Select a persona to test the specialized dashboards:", style = MaterialTheme.typography.bodySmall)
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Button(
-                        onClick = {
-                            onSwitchRole(UserRole.CUSTOMER)
-                            showRoleSwitchDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = BikePrimary)
-                    ) {
-                        Text("Customer (Rahul Sharma)")
-                    }
-                    Button(
-                        onClick = {
-                            onSwitchRole(UserRole.SERVICE_PROVIDER)
-                            showRoleSwitchDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = BikeSecondary)
-                    ) {
-                        Text("Service Provider (Apex MotoCare)")
-                    }
-                    Button(
-                        onClick = {
-                            onSwitchRole(UserRole.ADMIN)
-                            showRoleSwitchDialog = false
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF6B21A8))
-                    ) {
-                        Text("Super Admin (HQ Panel)")
-                    }
-                }
-            },
-            confirmButton = {},
-            dismissButton = {
-                TextButton(onClick = { showRoleSwitchDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
     }
 }
 

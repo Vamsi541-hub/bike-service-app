@@ -257,7 +257,7 @@ fun CustomizationScreen(
                                 // Fuel Tank & Fairing with Selected Accent Color
                                 val tankPath = Path().apply {
                                     moveTo(cx(140f), cy(55f))
-                                    quadraticBezierTo(cx(180f), cy(30f), cx(220f), cy(45f))
+                                    quadraticTo(cx(180f), cy(30f), cx(220f), cy(45f))
                                     lineTo(cx(210f), cy(65f))
                                     lineTo(cx(150f), cy(65f))
                                     close()
@@ -356,7 +356,7 @@ fun CustomizationScreen(
                 )
             }
 
-            items(options) { opt ->
+            items(options, key = { it.id }) { opt ->
                 val isSelected = selectedCustomizationIds.contains(opt.id)
                 Card(
                     modifier = Modifier

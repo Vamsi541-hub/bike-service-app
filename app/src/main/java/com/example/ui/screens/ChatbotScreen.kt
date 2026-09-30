@@ -326,7 +326,7 @@ fun ChatbotScreen(
                 }
             }
 
-            items(messages) { msg ->
+            items(messages, key = { it.id }) { msg ->
                 ChatBubble(msg = msg)
             }
 
