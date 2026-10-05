@@ -9,6 +9,7 @@ import com.example.data.model.*
 import com.example.data.location.DeviceLocationService
 import com.example.data.location.NearbyPlace
 import com.example.data.location.NearbyPlacesService
+import com.example.data.auth.SessionStore
 import com.example.data.repository.BikeCareRepository
 import com.example.data.sync.SyncState
 import kotlinx.coroutines.delay
@@ -34,7 +35,8 @@ sealed class AppScreen {
 class BikeCareViewModel(
     private val repository: BikeCareRepository,
     private val locationService: DeviceLocationService? = null,
-    private val nearbyPlacesService: NearbyPlacesService? = null
+    private val nearbyPlacesService: NearbyPlacesService? = null,
+    private val sessionStore: SessionStore? = null
 ) : ViewModel() {
 
     // --- Active Screen State ---
@@ -52,6 +54,18 @@ class BikeCareViewModel(
     // --- Auth & User State ---
     private val _currentUser = MutableStateFlow<User?>(null)
     val currentUser: StateFlow<User?> = _currentUser.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            val userId = sessionStore?.getUserId()
+            if (!userId.isNullOrBlank()) {
+                repository.getUser(userId)?.let {
+                    _currentUser.value = it
+                    _currentScreen.value = AppScreen.Main
+                }
+            }
+        }
+    }
 
     // --- Bikes ---
     val allBikes: StateFlow<List<Bike>> = repository.allBikes
@@ -175,6 +189,7 @@ class BikeCareViewModel(
     }
 
     fun logout() {
+        sessionStore?.clear()
         _currentUser.value = null
         _currentScreen.value = AppScreen.Auth
     }
@@ -190,6 +205,7 @@ class BikeCareViewModel(
     fun loginUser(user: User) {
         viewModelScope.launch {
             repository.saveUser(user)
+            sessionStore?.saveUserId(user.id)
             _currentUser.value = user
             _currentScreen.value = AppScreen.Main
         }
@@ -249,9 +265,9 @@ class BikeCareViewModel(
             val totalCost = services.sumOf { it.estimatedPrice }
             val newBooking = Booking(
                 id = "BK-${UUID.randomUUID().toString().take(6).uppercase()}",
-                userId = "current_user",
+                userId = currentUser.value?.id ?: return@launch,
                 customerName = currentUser.value?.name ?: "Customer",
-                customerPhone = currentUser.value?.phone ?: "+91 98765 43210",
+                customerPhone = currentUser.value?.phone ?: return@launch,
                 providerId = provider.id,
                 providerName = provider.businessName,
                 bikeDetails = "${bike.brand} ${bike.model} (${bike.fuelType.name}, ${bike.year})",
@@ -308,7 +324,7 @@ class BikeCareViewModel(
             repository.createBooking(
                 Booking(
                     id = "ORDER-${UUID.randomUUID().toString().take(6).uppercase()}",
-                    userId = "current_user",
+                    userId = currentUser.value?.id ?: return@launch,
                     customerName = currentUser.value?.name ?: "Customer",
                     customerPhone = currentUser.value?.phone ?: "+91 98765 43210",
                     providerId = "prov_1",
