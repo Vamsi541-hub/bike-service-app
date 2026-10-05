@@ -18,16 +18,15 @@ jobs:
         with:
           fetch-depth: 1
 
-      - name: Package project
+      - name: Prepare project
         run: |
           mkdir -p /tmp/package
           rsync -a ./ /tmp/package/             --exclude '.git'             --exclude '.github/workflows/package-project.yml'             --exclude '**/build'             --exclude '.gradle'
-          cd /tmp/package
-          zip -r /tmp/bike-service-app-android-studio.zip .             -x '.git/*' '.gradle/*' '**/build/*'
 
-      - name: Upload project ZIP
+      - name: Upload Android Studio project
         uses: actions/upload-artifact@v4
         with:
           name: bike-service-app-android-studio
-          path: /tmp/bike-service-app-android-studio.zip
+          path: /tmp/package
+          include-hidden-files: true
           retention-days: 7
