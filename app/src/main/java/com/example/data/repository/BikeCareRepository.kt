@@ -2,6 +2,7 @@ package com.example.data.repository
 
 import com.example.data.local.BikeCareDao
 import com.example.data.model.*
+import com.example.data.auth.PasswordHasher
 import com.example.data.sync.CloudSyncManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -30,7 +31,19 @@ class BikeCareRepository(
 
     fun getUser(userId: String): Flow<User?> = dao.getUserById(userId)
     suspend fun findUser(emailOrPhone: String): User? = dao.findUserByEmailOrPhone(emailOrPhone.trim())
-    suspend fun authenticateUser(emailOrPhone: String, password: String): User? = dao.authenticateUser(emailOrPhone.trim(), password)
+
+    suspend fun authenticateUser(emailOrPhone: String, password: String): User? {
+        val user = dao.findUserByEmailOrPhone(emailOrPhone.trim()) ?: return null
+        return when {
+            PasswordHasher.isHashed(user.password) && PasswordHasher.matches(password, user.password) -> user
+            !PasswordHasher.isHashed(user.password) && user.password == password -> {
+                val upgraded = user.copy(password = PasswordHasher.hash(password))
+                dao.insertUser(upgraded)
+                upgraded
+            }
+            else -> null
+        }
+    }
     fun getBookingsForProvider(providerId: String): Flow<List<Booking>> = dao.getBookingsForProvider(providerId)
 
     init {
@@ -338,7 +351,12 @@ class BikeCareRepository(
 
     // --- User & Role Actions ---
     suspend fun saveUser(user: User) {
-        dao.insertUser(user)
+        val safePassword = when {
+            user.password.isBlank() -> user.password
+            PasswordHasher.isHashed(user.password) -> user.password
+            else -> PasswordHasher.hash(user.password)
+        }
+        dao.insertUser(user.copy(password = safePassword))
     }
 
     // --- Bike Actions ---

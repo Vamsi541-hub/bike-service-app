@@ -1,10 +1,14 @@
 package com.example
 
 import android.os.Bundle
+import android.Manifest
+import android.content.pm.PackageManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.*
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +20,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.data.local.BikeCareDatabase
 import com.example.data.model.FuelType
+import com.example.data.location.DeviceLocationService
+import com.example.data.location.NearbyPlacesService
+import com.example.data.auth.SessionStore
 import com.example.data.repository.BikeCareRepository
 import com.example.data.sync.CloudSyncManager
 import com.example.ui.components.*
@@ -34,10 +41,13 @@ class MainActivity : ComponentActivity() {
         val syncManager = CloudSyncManager(applicationContext)
         val geminiService = com.example.data.gemini.GeminiChatService(applicationContext)
         val repository = BikeCareRepository(database.dao(), syncManager, geminiService)
+        val locationService = DeviceLocationService(applicationContext)
+        val nearbyPlacesService = NearbyPlacesService()
+        val sessionStore = SessionStore(applicationContext)
 
         setContent {
             val viewModel: BikeCareViewModel = viewModel(
-                factory = BikeCareViewModelFactory(repository)
+                factory = BikeCareViewModelFactory(repository, locationService, nearbyPlacesService, sessionStore)
             )
 
             val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
@@ -62,6 +72,39 @@ class MainActivity : ComponentActivity() {
             val selectedServiceIds by viewModel.selectedServiceIds.collectAsStateWithLifecycle()
             val chatMessages by viewModel.chatMessages.collectAsStateWithLifecycle()
             val isChatTyping by viewModel.isChatbotTyping.collectAsStateWithLifecycle()
+            val userLocation by viewModel.userLocation.collectAsStateWithLifecycle()
+            val nearbyPlaces by viewModel.nearbyPlaces.collectAsStateWithLifecycle()
+            val locationPermissionLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                contract = ActivityResultContracts.RequestMultiplePermissions()
+            ) { result ->
+                val granted = result[Manifest.permission.ACCESS_FINE_LOCATION] == true ||
+                        result[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+                if (granted) viewModel.refreshNearbyPlaces()
+            }
+
+            LaunchedEffect(Unit) {
+                val fineGranted = ContextCompat.checkSelfPermission(
+                    this@MainActivity, Manifest.permission.ACCESS_FINE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+                val coarseGranted = ContextCompat.checkSelfPermission(
+                    this@MainActivity, Manifest.permission.ACCESS_COARSE_LOCATION
+                ) == PackageManager.PERMISSION_GRANTED
+
+                if (fineGranted || coarseGranted) {
+                    viewModel.refreshNearbyPlaces()
+                } else {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                }
+            }
+
+            LaunchedEffect(selectedBike?.fuelType) {
+                if (userLocation != null) viewModel.refreshNearbyPlaces()
+            }
 
             // Back button handling
             BackHandler(enabled = currentScreen !is AppScreen.Main || currentTab != AppTab.HOME) {
@@ -195,6 +238,8 @@ class MainActivity : ComponentActivity() {
                             OfflineMapCanvas(
                                 userFuelType = selectedBike?.fuelType ?: FuelType.PETROL,
                                 targetPoiId = viewModel.selectedMapPoiId,
+                                userLocation = userLocation,
+                                nearbyPlaces = nearbyPlaces,
                                 onCallRequested = { name, phone ->
                                     viewModel.callDialogProvider = Pair(name, phone)
                                 },

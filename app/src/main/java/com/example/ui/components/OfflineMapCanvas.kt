@@ -24,6 +24,9 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.FuelType
+import com.example.data.location.NearbyPlace
+import com.example.data.location.UserLocation
+import java.util.Locale
 import com.example.ui.theme.*
 import kotlin.math.cos
 import kotlin.math.sin
@@ -44,24 +47,45 @@ data class MapPoi(
 fun OfflineMapCanvas(
     userFuelType: FuelType = FuelType.PETROL,
     targetPoiId: String? = null,
+    userLocation: UserLocation? = null,
+    nearbyPlaces: List<NearbyPlace> = emptyList(),
     onCallRequested: (String, String) -> Unit = { _, _ -> },
     onBack: () -> Unit = {}
 ) {
-    // List of predefined offline POIs in local sector
-    val allPois = remember {
-        listOf(
-            MapPoi("prov_1", "Apex MotoCare Studio", "MECHANIC", 620f, 420f, "1.2 km", "+91 98451 22334"),
-            MapPoi("prov_2", "ProRider Pitstop 24/7", "MECHANIC", 380f, 680f, "2.1 km", "+91 97410 88990"),
-            MapPoi("prov_3", "VoltSpeed EV Fast Charger", "EV", 740f, 260f, "1.8 km", "+91 94480 33445"),
-            MapPoi("fuel_1", "IndianOil Smart Petrol Pump", "PETROL", 290f, 340f, "800 m", "+91 80255 12345"),
-            MapPoi("fuel_2", "HP AutoCare Fuel & Air", "PETROL", 810f, 600f, "2.4 km", "+91 80255 67890"),
-            MapPoi("ev_1", "Ather Grid Supercharger", "EV", 480f, 210f, "1.1 km", "+91 80010 99887"),
-            MapPoi("punc_1", "QuickFix 24/7 Puncture Station", "PUNCTURE", 440f, 520f, "500 m", "+91 98800 44321")
-        )
+    // Live OpenStreetMap POIs projected around the real device location.
+    val allPois = remember(nearbyPlaces, userLocation, userFuelType) {
+        nearbyPlaces.map { place ->
+            val meters = (place.distanceKm * 1000.0).coerceAtMost(3500.0)
+            val results = FloatArray(2)
+            if (userLocation != null) {
+                android.location.Location.distanceBetween(
+                    userLocation.latitude, userLocation.longitude,
+                    place.latitude, place.longitude, results
+                )
+            }
+            val distanceMeters = if (userLocation != null) results[0].toDouble() else meters
+            val bearing = if (userLocation != null) results[1].toDouble() else 0.0
+            val radius = (distanceMeters / 8.5).toFloat().coerceIn(70f, 420f)
+            val angle = Math.toRadians(bearing)
+            MapPoi(
+                id = place.id,
+                title = place.title,
+                category = place.category,
+                x = 500f + (sin(angle) * radius).toFloat(),
+                y = 500f - (cos(angle) * radius).toFloat(),
+                distanceStr = String.format(Locale.US, "%.1f km", place.distanceKm),
+                phone = place.phone ?: "",
+                isOpen = place.isOpen
+            )
+        }.ifEmpty {
+            listOf(
+                MapPoi("no_live_results", "No live places found", "MECHANIC", 500f, 500f, "—", "", false)
+            )
+        }
     }
 
     var selectedCategoryFilter by remember { mutableStateOf("ALL") }
-    var selectedPoi by remember {
+    var selectedPoi by remember(allPois, targetPoiId) {
         mutableStateOf(allPois.find { it.id == targetPoiId } ?: allPois.first())
     }
 
