@@ -22,6 +22,7 @@ import com.example.data.local.BikeCareDatabase
 import com.example.data.model.FuelType
 import com.example.data.location.DeviceLocationService
 import com.example.data.location.NearbyPlacesService
+import com.example.data.auth.SessionStore
 import com.example.data.repository.BikeCareRepository
 import com.example.data.sync.CloudSyncManager
 import com.example.ui.components.*
@@ -42,10 +43,11 @@ class MainActivity : ComponentActivity() {
         val repository = BikeCareRepository(database.dao(), syncManager, geminiService)
         val locationService = DeviceLocationService(applicationContext)
         val nearbyPlacesService = NearbyPlacesService()
+        val sessionStore = SessionStore(applicationContext)
 
         setContent {
             val viewModel: BikeCareViewModel = viewModel(
-                factory = BikeCareViewModelFactory(repository, locationService, nearbyPlacesService)
+                factory = BikeCareViewModelFactory(repository, locationService, nearbyPlacesService, sessionStore)
             )
 
             val isDarkMode by viewModel.isDarkMode.collectAsStateWithLifecycle()
