@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.location.Location
 import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
+import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 
@@ -20,7 +22,16 @@ class DeviceLocationService(context: Context) {
         suspendCancellableCoroutine { continuation ->
             client.lastLocation
                 .addOnSuccessListener { location: Location? ->
-                    continuation.resume(location?.let { UserLocation(it.latitude, it.longitude) })
+                    if (location != null) {
+                        continuation.resume(UserLocation(location.latitude, location.longitude))
+                    } else {
+                        val tokenSource = CancellationTokenSource()
+                        client.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, tokenSource.token)
+                            .addOnSuccessListener { current ->
+                                continuation.resume(current?.let { UserLocation(it.latitude, it.longitude) })
+                            }
+                            .addOnFailureListener { continuation.resume(null) }
+                    }
                 }
                 .addOnFailureListener { continuation.resume(null) }
         }
