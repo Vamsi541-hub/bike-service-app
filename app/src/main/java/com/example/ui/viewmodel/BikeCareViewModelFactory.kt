@@ -5,16 +5,18 @@ import androidx.lifecycle.ViewModelProvider
 import com.example.data.repository.BikeCareRepository
 import com.example.data.location.DeviceLocationService
 import com.example.data.location.NearbyPlacesService
+import com.example.data.auth.SessionStore
 
 class BikeCareViewModelFactory(
     private val repository: BikeCareRepository,
     private val locationService: DeviceLocationService,
-    private val nearbyPlacesService: NearbyPlacesService
+    private val nearbyPlacesService: NearbyPlacesService,
+    private val sessionStore: SessionStore
 ) : ViewModelProvider.Factory {
     @Suppress("UNCHECKED_CAST")
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(BikeCareViewModel::class.java)) {
-            return BikeCareViewModel(repository, locationService, nearbyPlacesService) as T
+            return BikeCareViewModel(repository, locationService, nearbyPlacesService, sessionStore) as T
         }
         throw IllegalArgumentException("Unknown ViewModel class: ${modelClass.name}")
     }
