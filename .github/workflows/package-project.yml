@@ -21,13 +21,9 @@ jobs:
       - name: Package project
         run: |
           mkdir -p /tmp/package
-          rsync -a ./ /tmp/package/ \
-            --exclude '.git' \
-            --exclude '.github/workflows/package-project.yml' \
-            --exclude '**/build' \
-            --exclude '.gradle'
-          cd /tmp
-          zip -r bike-service-app-android-studio.zip package
+          rsync -a ./ /tmp/package/             --exclude '.git'             --exclude '.github/workflows/package-project.yml'             --exclude '**/build'             --exclude '.gradle'
+          cd /tmp/package
+          zip -r /tmp/bike-service-app-android-studio.zip .             -x '.git/*' '.gradle/*' '**/build/*'
 
       - name: Upload project ZIP
         uses: actions/upload-artifact@v4
