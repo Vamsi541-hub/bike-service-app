@@ -1,0 +1,37 @@
+name: Package Android Studio Project
+
+on:
+  push:
+    branches:
+      - stabilize/core-foundation
+  workflow_dispatch:
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Package project
+        run: |
+          mkdir -p /tmp/package
+          rsync -a ./ /tmp/package/ \
+            --exclude '.git' \
+            --exclude '.github/workflows/package-project.yml' \
+            --exclude '**/build' \
+            --exclude '.gradle'
+          cd /tmp
+          zip -r bike-service-app-android-studio.zip package
+
+      - name: Upload project ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: bike-service-app-android-studio
+          path: /tmp/bike-service-app-android-studio.zip
+          retention-days: 7
