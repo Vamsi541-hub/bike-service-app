@@ -6,6 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.model.*
+import com.example.data.location.DeviceLocationService
+import com.example.data.location.NearbyPlace
+import com.example.data.location.NearbyPlacesService
 import com.example.data.repository.BikeCareRepository
 import com.example.data.sync.SyncState
 import kotlinx.coroutines.delay
@@ -29,7 +32,9 @@ sealed class AppScreen {
 }
 
 class BikeCareViewModel(
-    private val repository: BikeCareRepository
+    private val repository: BikeCareRepository,
+    private val locationService: DeviceLocationService? = null,
+    private val nearbyPlacesService: NearbyPlacesService? = null
 ) : ViewModel() {
 
     // --- Active Screen State ---
@@ -97,6 +102,31 @@ class BikeCareViewModel(
 
     // --- Cloud Sync ---
     val syncState: StateFlow<SyncState> = repository.getSyncManager().syncState
+
+    // --- Real device location / nearby places ---
+    private val _userLocation = MutableStateFlow<com.example.data.location.UserLocation?>(null)
+    val userLocation: StateFlow<com.example.data.location.UserLocation?> = _userLocation.asStateFlow()
+
+    private val _nearbyPlaces = MutableStateFlow<List<NearbyPlace>>(emptyList())
+    val nearbyPlaces: StateFlow<List<NearbyPlace>> = _nearbyPlaces.asStateFlow()
+
+    private val _locationLoading = MutableStateFlow(false)
+    val locationLoading: StateFlow<Boolean> = _locationLoading.asStateFlow()
+
+    fun refreshNearbyPlaces() {
+        val locator = locationService ?: return
+        val places = nearbyPlacesService ?: return
+        viewModelScope.launch {
+            _locationLoading.value = true
+            val location = locator.getLastKnownLocation()
+            if (location != null) {
+                _userLocation.value = location
+                val fuelType = selectedBike.value?.fuelType ?: FuelType.PETROL
+                _nearbyPlaces.value = places.findNearby(location, fuelType)
+            }
+            _locationLoading.value = false
+        }
+    }
 
     // --- Active Dialogs ---
     var callDialogProvider by mutableStateOf<Pair<String, String>?>(null)
