@@ -3,7 +3,9 @@ package com.example.data.sync
 import android.content.Context
 import com.google.firebase.FirebaseApp
 import com.google.firebase.firestore.FirebaseFirestore
-import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.suspendCancellableCoroutine
+import com.google.android.gms.tasks.Task
+import kotlin.coroutines.resume
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,13 +41,13 @@ class CloudSyncManager(context: Context) {
             if (FirebaseApp.getApps(appContext).isEmpty()) return@runCatching false
             val db = FirebaseFirestore.getInstance()
             val document = db.collection("bikecare_sync_events").document()
-            document.set(
+            awaitTask(document.set(
                 mapOf(
                     "payloadSummary" to payloadSummary,
                     "createdAt" to now,
                     "platform" to "android"
                 )
-            ).await()
+            ))
             true
         }.getOrDefault(false)
 
@@ -71,6 +73,11 @@ class CloudSyncManager(context: Context) {
     fun getLastSyncTimeString(): String {
         val lastSync = prefs.getLong("last_sync_time", 0L)
         return if (lastSync > 0) format(lastSync) else "Not backed up yet"
+    }
+
+    private suspend fun <T> awaitTask(task: Task<T>): T = suspendCancellableCoroutine { continuation ->
+        task.addOnSuccessListener { continuation.resume(it) }
+        task.addOnFailureListener { continuation.resumeWith(Result.failure(it)) }
     }
 
     private fun format(timestamp: Long): String =
